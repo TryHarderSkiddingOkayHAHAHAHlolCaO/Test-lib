@@ -3,6 +3,8 @@ local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
 
 -- Theme
 local Theme = {
@@ -150,7 +152,7 @@ function Library:CreateWindow(options)
         Create("UICorner",{Parent=TabButton, CornerRadius=UDim.new(0,4)})
 
         if iconId then
-            local Icon = Create("ImageLabel",{
+            Create("ImageLabel",{
                 Parent=TabButton,
                 BackgroundTransparency=1,
                 Size=UDim2.new(0,20,0,20),
@@ -204,35 +206,19 @@ function Library:CreateWindow(options)
                 AutoButtonColor=false
             })
             Create("UICorner",{Parent=Btn, CornerRadius=UDim.new(0,4)})
-
-            Btn.MouseEnter:Connect(function()
-                TweenService:Create(Btn,TweenInfo.new(0.2),{BackgroundColor3=Color3.fromRGB(50,50,55)}):Play()
-            end)
-            Btn.MouseLeave:Connect(function()
-                TweenService:Create(Btn,TweenInfo.new(0.2),{BackgroundColor3=Theme.Item}):Play()
-            end)
-
-            Btn.MouseButton1Click:Connect(function()
-                pcall(callback)
-            end)
+            Btn.MouseButton1Click:Connect(function() pcall(callback) end)
         end
 
         -- Toggle
         function ElementFunctions:Toggle(text, callback)
             local Enabled=false
-            local ToggleFrame=Create("Frame",{
-                Parent=Page,
-                BackgroundColor3=Theme.Item,
-                Size=UDim2.new(1,0,0,32)
-            })
+            local ToggleFrame=Create("Frame",{Parent=Page, BackgroundColor3=Theme.Item, Size=UDim2.new(1,0,0,32)})
             Create("UICorner",{Parent=ToggleFrame, CornerRadius=UDim.new(0,4)})
             Create("TextLabel",{Parent=ToggleFrame, BackgroundTransparency=1, Position=UDim2.new(0,10,0,0), Size=UDim2.new(0.7,0,1,0), Font=Theme.Font, Text=text, TextColor3=Theme.Text, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left})
-            
             local Indicator=Create("Frame",{Parent=ToggleFrame, BackgroundColor3=Color3.fromRGB(60,60,60), Position=UDim2.new(1,-50,0.5,-8), Size=UDim2.new(0,40,0,16)})
             Create("UICorner",{Parent=Indicator, CornerRadius=UDim.new(1,0)})
             local Circle=Create("Frame",{Parent=Indicator, BackgroundColor3=Color3.fromRGB(255,255,255), Position=UDim2.new(0,2,0.5,-6), Size=UDim2.new(0,12,0,12)})
             Create("UICorner",{Parent=Circle, CornerRadius=UDim.new(1,0)})
-
             local Trigger=Create("TextButton",{Parent=ToggleFrame, BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text=""})
             Trigger.MouseButton1Click:Connect(function()
                 Enabled=not Enabled
@@ -251,14 +237,13 @@ function Library:CreateWindow(options)
         function ElementFunctions:Slider(text,min,max,callback)
             local SliderFrame=Create("Frame",{Parent=Page, BackgroundColor3=Theme.Item, Size=UDim2.new(1,0,0,45)})
             Create("UICorner",{Parent=SliderFrame, CornerRadius=UDim.new(0,4)})
-            Create("TextLabel",{Parent=SliderFrame, BackgroundTransparency=1, Position=UDim2.new(0,10,0,5), Size=UDim2.new(0.5,0,0,20), Font=Theme.Font, Text=text, TextColor3=Theme.Text, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left})
+            local Label=Create("TextLabel",{Parent=SliderFrame, BackgroundTransparency=1, Position=UDim2.new(0,10,0,5), Size=UDim2.new(0.5,0,0,20), Font=Theme.Font, Text=text, TextColor3=Theme.Text, TextSize=12, TextXAlignment=Enum.TextXAlignment.Left})
             local ValueLabel=Create("TextLabel",{Parent=SliderFrame, BackgroundTransparency=1, Position=UDim2.new(1,-60,0,5), Size=UDim2.new(0,50,0,20), Font=Theme.Font, Text=tostring(min), TextColor3=Theme.TextDark, TextSize=12, TextXAlignment=Enum.TextXAlignment.Right})
             local Bar=Create("Frame",{Parent=SliderFrame, BackgroundColor3=Color3.fromRGB(20,20,20), Position=UDim2.new(0,10,0,30), Size=UDim2.new(1,-20,0,6)})
             Create("UICorner",{Parent=Bar, CornerRadius=UDim.new(1,0)})
             local Fill=Create("Frame",{Parent=Bar, BackgroundColor3=Theme.Accent, Size=UDim2.new(0,0,1,0)})
             Create("UICorner",{Parent=Fill, CornerRadius=UDim.new(1,0)})
             local Trigger=Create("TextButton",{Parent=Bar, BackgroundTransparency=1, Size=UDim2.new(1,0,1,0), Text=""})
-
             local dragging=false
             local function Update(input)
                 local SizeX=math.clamp((input.Position.X-Bar.AbsolutePosition.X)/Bar.AbsoluteSize.X,0,1)
@@ -267,44 +252,69 @@ function Library:CreateWindow(options)
                 ValueLabel.Text=tostring(Value)
                 pcall(callback,Value)
             end
-            Trigger.InputBegan:Connect(function(input)
-                if input.UserInputType==Enum.UserInputType.MouseButton1 then
-                    dragging=true
-                    Update(input)
-                end
-            end)
-            UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType==Enum.UserInputType.MouseButton1 then dragging=false end
-            end)
-            UserInputService.InputChanged:Connect(function(input)
-                if dragging and input.UserInputType==Enum.UserInputType.MouseMovement then Update(input) end
-            end)
+            Trigger.InputBegan:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 then dragging=true Update(input) end end)
+            UserInputService.InputEnded:Connect(function(input) if input.UserInputType==Enum.UserInputType.MouseButton1 then dragging=false end end)
+            UserInputService.InputChanged:Connect(function(input) if dragging and input.UserInputType==Enum.UserInputType.MouseMovement then Update(input) end end)
         end
 
         return ElementFunctions
     end
 
-    -- Show/Hide floating button
-    local ToggleBtn=Create("ImageButton",{
-        Parent = CoreGui,
-        BackgroundColor3 = Color3.fromRGB(0,0,0),
-        Size = UDim2.new(0,48,0,48),
-        Position = UDim2.new(0,10,0,100),
-        Image = "rbxassetid://110198609281800",
-        ZIndex = 9999
-    })
-    Create("UICorner",{Parent=ToggleBtn, CornerRadius=UDim.new(1,0)})
+    -- -------------------- Floating Show/Hide Button --------------------
+    local function CloseOpen()
+        local ScreenGuiBtn = Instance.new("ScreenGui")
+        ScreenGuiBtn.Name = "OpenClose"
+        ScreenGuiBtn.Parent = RunService:IsStudio() and LocalPlayer.PlayerGui or (gethui() or CoreGui)
+        ScreenGuiBtn.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
-    ToggleBtn.MouseButton1Click:Connect(function()
-        local isVisible=MainFrame.Visible
-        if isVisible then
-            TweenService:Create(MainFrame,TweenInfo.new(1.5,Enum.EasingStyle.Quad,Enum.EasingDirection.In),{Position=UDim2.new(0.5,0,1.2,0)}):Play()
-            task.delay(1.5,function() MainFrame.Visible=false end)
-        else
-            MainFrame.Visible=true
-            TweenService:Create(MainFrame,TweenInfo.new(1.5,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Position=UDim2.fromScale(0.5,0.5)}):Play()
+        local Btn = Instance.new("ImageButton")
+        Btn.Parent = ScreenGuiBtn
+        Btn.BackgroundColor3 = Color3.fromRGB(0,0,0)
+        Btn.BorderColor3 = Color3.fromRGB(255,0,0)
+        Btn.Position = UDim2.new(0.1021, 0, 0.0743, 0)
+        Btn.Size = UDim2.new(0,48,0,48)
+        Btn.Image = "https://www.roblox.com/Thumbs/Asset.ashx?width=420&height=420&assetId=110198609281800"
+        Btn.ZIndex = 9999
+
+        local Corner = Instance.new("UICorner")
+        Corner.Parent = Btn
+        Corner.CornerRadius = UDim.new(1,0)
+
+        -- Dragging
+        local dragging, dragStart, startPos = false, nil, nil
+        local function update(input)
+            local delta = input.Position - dragStart
+            Btn.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset+delta.X, startPos.Y.Scale, startPos.Y.Offset+delta.Y)
         end
-    end)
+        Btn.InputBegan:Connect(function(input)
+            if input.UserInputType==Enum.UserInputType.MouseButton1 or input.UserInputType==Enum.UserInputType.Touch then
+                dragging=true
+                dragStart=input.Position
+                startPos=Btn.Position
+                input.Changed:Connect(function()
+                    if input.UserInputState==Enum.UserInputState.End then dragging=false end
+                end)
+            end
+        end)
+        Btn.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType==Enum.UserInputType.MouseMovement or input.UserInputType==Enum.UserInputType.Touch) then
+                update(input)
+            end
+        end)
+
+        -- Hide/Show animation
+        Btn.MouseButton1Click:Connect(function()
+            local isVisible = MainFrame.Visible
+            if isVisible then
+                TweenService:Create(MainFrame,TweenInfo.new(1.5,Enum.EasingStyle.Quad,Enum.EasingDirection.In),{Position=UDim2.new(0.5,0,1.2,0)}):Play()
+                task.delay(1.5,function() MainFrame.Visible=false end)
+            else
+                MainFrame.Visible=true
+                TweenService:Create(MainFrame,TweenInfo.new(1.5,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Position=UDim2.fromScale(0.5,0.5)}):Play()
+            end
+        end)
+    end
+    CloseOpen()
 
     return WindowFunctions
 end
