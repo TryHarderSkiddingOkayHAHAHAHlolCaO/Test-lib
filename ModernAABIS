@@ -1,0 +1,221 @@
+local Library = {}
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local CoreGui = game:GetService("CoreGui")
+local RunService = game:GetService("RunService")
+
+--[[ Theme ]]--
+local Theme = {
+    Main = Color3.fromRGB(25, 25, 30),
+    TopBar = Color3.fromRGB(30, 30, 35),
+    Accent = Color3.fromRGB(56, 116, 255),
+    Text = Color3.fromRGB(240, 240, 240),
+    TextDark = Color3.fromRGB(150, 150, 150),
+    Item = Color3.fromRGB(40, 40, 45),
+    Font = Enum.Font.GothamBold,
+    CornerRadius = UDim.new(0, 12) -- rounded edges
+}
+
+--[[ Helper ]]--
+local function Create(class, props)
+    local obj = Instance.new(class)
+    for k,v in pairs(props) do obj[k] = v end
+    return obj
+end
+
+local function MakeDraggable(topbarObject, object)
+    local dragging, dragInput, dragStart, startPos
+    local function update(input)
+        local delta = input.Position - dragStart
+        object.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+    topbarObject.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = object.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    topbarObject.InputChanged:Connect(function(input)
+        if dragging then update(input) end
+    end)
+end
+
+--[[ Main GUI ]]--
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ModernLib"
+ScreenGui.Parent = CoreGui:FindFirstChild("RobloxGui") or CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+--[[ Window Creation ]]--
+function Library:CreateWindow(options)
+    local WindowName = options.Name or "Library"
+    local WindowSize = options.Size or UDim2.fromOffset(500,350)
+    local TabWidth = options.TabWidth or 130
+
+    local MainFrame = Create("Frame", {
+        Name = "MainFrame",
+        Parent = ScreenGui,
+        BackgroundColor3 = Theme.Main,
+        BackgroundTransparency = 0.2, -- dark transparent
+        Position = UDim2.fromScale(0.5,0.5),
+        AnchorPoint = Vector2.new(0.5,0.5),
+        Size = WindowSize,
+        BorderSizePixel = 0,
+        ClipsDescendants = true
+    })
+    Create("UICorner",{Parent=MainFrame, CornerRadius = Theme.CornerRadius})
+    Create("UIStroke",{Parent=MainFrame, Color=Color3.fromRGB(60,60,60), Thickness=1})
+
+    -- TopBar
+    local TopBar = Create("Frame",{
+        Name="TopBar",
+        Parent=MainFrame,
+        BackgroundColor3=Theme.TopBar,
+        Size=UDim2.new(1,0,0,35),
+        BorderSizePixel=0
+    })
+    Create("UICorner",{Parent=TopBar, CornerRadius=Theme.CornerRadius})
+
+    Create("TextLabel",{
+        Name="Title",
+        Parent=TopBar,
+        BackgroundTransparency=1,
+        Position=UDim2.new(0,15,0,0),
+        Size=UDim2.new(0.5,0,1,0),
+        Font=Theme.Font,
+        Text=WindowName,
+        TextColor3=Theme.Text,
+        TextSize=14,
+        TextXAlignment=Enum.TextXAlignment.Left
+    })
+
+    local CloseButton = Create("TextButton",{
+        Name="Close",
+        Parent=TopBar,
+        BackgroundTransparency=1,
+        Position=UDim2.new(1,-35,0,0),
+        Size=UDim2.new(0,35,1,0),
+        Font=Theme.Font,
+        Text="X",
+        TextColor3=Color3.fromRGB(200,50,50),
+        TextSize=16
+    })
+    CloseButton.MouseButton1Click:Connect(function()
+        MainFrame:Destroy()
+    end)
+
+    MakeDraggable(TopBar, MainFrame)
+
+    -- TabContainer
+    local TabContainer = Create("Frame",{
+        Name="TabContainer",
+        Parent=MainFrame,
+        BackgroundTransparency=1,
+        Position=UDim2.new(0,10,0,45),
+        Size=UDim2.new(0, TabWidth,1,-55)
+    })
+    local TabListLayout = Create("UIListLayout",{Parent=TabContainer, SortOrder=Enum.SortOrder.LayoutOrder, Padding=UDim.new(0,5)})
+
+    local PagesContainer = Create("Frame",{
+        Name="PagesContainer",
+        Parent=MainFrame,
+        BackgroundTransparency=1,
+        Position=UDim2.new(0,TabWidth+20,0,45),
+        Size=UDim2.new(1,-TabWidth-30,1,-55),
+        ClipsDescendants=true
+    })
+
+    local WindowFunctions = {}
+    local FirstTab = true
+
+    function WindowFunctions:Tab(name, iconId)
+        local TabButton = Create("TextButton",{
+            Name=name.."Tab",
+            Parent=TabContainer,
+            BackgroundColor3=Theme.Main,
+            BackgroundTransparency=1,
+            Size=UDim2.new(1,0,0,30),
+            Font=Theme.Font,
+            Text=name,
+            TextColor3=Theme.TextDark,
+            TextSize=13,
+            AutoButtonColor=false
+        })
+        Create("UICorner",{Parent=TabButton, CornerRadius=UDim.new(0,4)})
+
+        if iconId then
+            local Icon = Create("ImageLabel",{
+                Parent=TabButton,
+                BackgroundTransparency=1,
+                Size=UDim2.new(0,20,0,20),
+                Position=UDim2.new(0,5,0.5,-10),
+                Image="rbxassetid://"..tostring(iconId)
+            })
+        end
+
+        local Page = Create("ScrollingFrame",{
+            Name=name.."Page",
+            Parent=PagesContainer,
+            BackgroundTransparency=1,
+            Size=UDim2.new(1,0,1,0),
+            ScrollBarThickness=2,
+            ScrollBarImageColor3=Theme.Accent,
+            CanvasSize=UDim2.new(0,0,0,0),
+            Visible=false
+        })
+        local PageLayout = Create("UIListLayout",{Parent=Page, SortOrder=Enum.SortOrder.LayoutOrder, Padding=UDim.new(0,8)})
+        Create("UIPadding",{Parent=Page, PaddingLeft=UDim.new(0,2), PaddingRight=UDim.new(0,2)})
+        PageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            Page.CanvasSize = UDim2.new(0,0,0,PageLayout.AbsoluteContentSize.Y+10)
+        end)
+
+        local function Activate()
+            for _,v in pairs(PagesContainer:GetChildren()) do v.Visible=false end
+            for _,v in pairs(TabContainer:GetChildren()) do
+                if v:IsA("TextButton") then
+                    TweenService:Create(v,TweenInfo.new(0.2),{TextColor3=Theme.TextDark, BackgroundTransparency=1}):Play()
+                end
+            end
+            Page.Visible=true
+            TweenService:Create(TabButton,TweenInfo.new(0.2),{TextColor3=Theme.Accent, BackgroundTransparency=0.9}):Play()
+            TabButton.BackgroundColor3=Theme.Accent
+        end
+        TabButton.MouseButton1Click:Connect(Activate)
+        if FirstTab then FirstTab=false Activate() end
+
+        local ElementFunctions = {}
+        -- Elements (Button, Toggle, Slider) can go here
+        return ElementFunctions
+    end
+
+    --[[ Show/Hide Button with animation ]]--
+    local ToggleBtn = Create("ImageButton",{
+        Parent = CoreGui,
+        BackgroundColor3 = Color3.fromRGB(0,0,0),
+        Size = UDim2.new(0,48,0,48),
+        Position = UDim2.new(0,10,0,100),
+        Image = "rbxassetid://110198609281800"
+    })
+    Create("UICorner",{Parent=ToggleBtn, CornerRadius=UDim.new(1,0)})
+
+    ToggleBtn.MouseButton1Click:Connect(function()
+        local isVisible = MainFrame.Visible
+        if isVisible then
+            TweenService:Create(MainFrame,TweenInfo.new(1.5,Enum.EasingStyle.Quad,Enum.EasingDirection.In),{Position=UDim2.new(0.5,0,1.2,0)}):Play()
+            task.delay(1.5,function() MainFrame.Visible=false end)
+        else
+            MainFrame.Visible=true
+            TweenService:Create(MainFrame,TweenInfo.new(1.5,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Position=UDim2.fromScale(0.5,0.5)}):Play()
+        end
+    end)
+
+    return WindowFunctions
+end
+
+return Library
